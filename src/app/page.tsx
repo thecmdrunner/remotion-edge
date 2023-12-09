@@ -1,11 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FPS } from "@/constants";
-import { HelloWorld } from "@/remotion/HelloWorld";
-import { Player } from "@remotion/player";
-import { useEffect, useRef, useState } from "react";
+import { FPS, TOTAL_DURATION_IN_FRAMES } from "@/constants";
+import { useEffect, useState } from "react";
 import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 const ffmpeg = createFFmpeg({ log: true });
 
@@ -24,8 +20,6 @@ export default function HomePage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const [isFetchingImages, setIsFetchingImages] = useState(false);
-
-  const totalNumberOfFrames = FPS;
 
   const loadFFmpeg = async () => {
     await ffmpeg.load();
@@ -91,7 +85,7 @@ export default function HomePage() {
 
     // Write the images to memory
 
-    const framesPromises = Array(totalNumberOfFrames)
+    const framesPromises = Array(TOTAL_DURATION_IN_FRAMES)
       .fill(true)
       .map(async (_, i) => {
         const imageUrl = `/api/og?frame=${i}`;
@@ -107,7 +101,7 @@ export default function HomePage() {
     await Promise.all(framesPromises);
 
     const fileListAB = await (
-      await fetch(`/api/filelist?total=${totalNumberOfFrames}`)
+      await fetch(`/api/filelist?total=${TOTAL_DURATION_IN_FRAMES}`)
     ).arrayBuffer();
 
     const filelistContents = new TextDecoder("utf-8").decode(fileListAB);
@@ -145,6 +139,8 @@ export default function HomePage() {
       "yuv420p",
       "-r",
       `${FPS}`,
+      //   "-vf",
+      //   '"fps=30"',
       "output.mp4",
     );
     // await ffmpeg.run(

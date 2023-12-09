@@ -10,3 +10,5 @@ export const REMOTION_LOGO =
 
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
+
+export const TOTAL_DURATION_IN_FRAMES = 5 * FPS;

@@ -1,4 +1,4 @@
-import { HEIGHT, WIDTH } from "@/constants";
+import { HEIGHT, TOTAL_DURATION_IN_FRAMES, WIDTH } from "@/constants";
 import { interpolate } from "@/lib/utils/interpolate";
 import { Title } from "@/remotion/HelloWorld/Title";
 import { ImageResponse } from "next/og";
@@ -24,8 +24,8 @@ export async function GET(request: Request) {
     if (isNaN(frame)) {
       return new Response(`Invalid frame parameter`, { status: 400 });
     }
-    const opacity = interpolate(frame, [0, 100], [0, 1]);
-    const logoTranslation = interpolate(frame, [0, 30], [0, -150]);
+    const opacity = interpolate(frame, [0, TOTAL_DURATION_IN_FRAMES], [0, 1]);
+
     console.log({ frame, opacity });
 
     return new ImageResponse(
@@ -44,16 +44,6 @@ export async function GET(request: Request) {
             flexWrap: "nowrap",
           }}
         >
-          <div
-            tw="absolute flex top-0 left-0 right-0 bottom-0 w-full h-full"
-            style={{ transform: `translateY(${logoTranslation.toString()}px)` }}
-          >
-            <Title
-              frame={frame}
-              titleColor={"red"}
-              titleText={"OGGGGGGGGGGGGGGG"}
-            />
-          </div>
           <div
             style={{
               display: "flex",
@@ -78,11 +68,16 @@ export async function GET(request: Request) {
               color: "white",
               marginTop: 30,
               padding: "0 120px",
+              display: "flex",
+              flexDirection: "column",
               lineHeight: 1.4,
               whiteSpace: "pre-wrap",
             }}
           >
-            {frame.toString()}
+            Current frame is: {frame.toString()}
+            <br />
+            Current duration is{" "}
+            {((frame / TOTAL_DURATION_IN_FRAMES) * 100).toString()} %
           </div>
         </div>
       ),
