@@ -1,8 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { FPS, TOTAL_DURATION_IN_FRAMES } from "@/constants";
+import { FPS } from "@/constants";
 import { useEffect, useState } from "react";
 import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 const ffmpeg = createFFmpeg({ log: true });
 
 export default function HomePage() {
@@ -18,8 +20,8 @@ export default function HomePage() {
   const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
   const [gif, setGif] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
   const [isFetchingImages, setIsFetchingImages] = useState(false);
+  const [totalSeconds, setTotalSeconds] = useState(5);
 
   const loadFFmpeg = async () => {
     await ffmpeg.load();
@@ -85,7 +87,7 @@ export default function HomePage() {
 
     // Write the images to memory
 
-    const framesPromises = Array(TOTAL_DURATION_IN_FRAMES)
+    const framesPromises = Array(totalSeconds * FPS)
       .fill(true)
       .map(async (_, i) => {
         const imageUrl = `/api/og?frame=${i}`;
@@ -101,7 +103,7 @@ export default function HomePage() {
     await Promise.all(framesPromises);
 
     const fileListAB = await (
-      await fetch(`/api/filelist?total=${TOTAL_DURATION_IN_FRAMES}`)
+      await fetch(`/api/filelist?total=${totalSeconds * FPS}`)
     ).arrayBuffer();
 
     const filelistContents = new TextDecoder("utf-8").decode(fileListAB);
@@ -238,6 +240,16 @@ export default function HomePage() {
             </audio>
           )}
           {finalVideoUrl && <video controls src={finalVideoUrl}></video>}
+          <br />
+          <div className="flex flex-col">
+            <Label>Duration in seconds</Label>
+            <Input
+              type="number"
+              value={totalSeconds}
+              onChange={(e) => setTotalSeconds(Number(e.target.value))}
+              className="w-24"
+            />
+          </div>
         </>
       ) : (
         <p>Loading...</p>

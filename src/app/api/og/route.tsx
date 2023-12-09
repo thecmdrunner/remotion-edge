@@ -76,9 +76,9 @@ export async function GET(request: Request) {
             }}
           >
             Current frame is: {frame.toString()}
-            <br />
+            {/* <br />
             Current duration is{" "}
-            {((frame / TOTAL_DURATION_IN_FRAMES) * 100).toString()} %
+            {((frame / TOTAL_DURATION_IN_FRAMES) * 100).toString()} % */}
           </div>
         </div>
       ),
