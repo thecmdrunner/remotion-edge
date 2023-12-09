@@ -1,3 +1,4 @@
+import { FPS, TOTAL_DURATION_IN_FRAMES } from "@/constants";
 import { NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     const allFilesStr = Array(total)
       .fill(true)
       .map((_, index) => {
-        return `file frame-${index}.png`;
+        return `file frame-${index}.png\nduration 0.0333`;
       })
       .join("\n");
 

@@ -137,7 +137,9 @@ export default function HomePage() {
       "libx264",
       "-pix_fmt",
       "yuv420p",
-      "-r",
+      "-framerate",
+      // "30",
+      // "-r",
       `${FPS}`,
       //   "-vf",
       //   '"fps=30"',
@@ -196,18 +198,26 @@ export default function HomePage() {
           )}
           <h3>Result</h3>
           {/* <button onClick={convertVideoToMp3}>Convert</button> */}
-          <Button onClick={fetchAndWriteFrames}>Fetch all frames</Button>
+          <Button onClick={fetchAndWriteFrames}>1. Fetch all frames</Button>
           <br />
-          <Button onClick={convertFramesToVideo}>Convert to video</Button>{" "}
+          <Button onClick={convertFramesToVideo}>
+            2. Convert to video
+          </Button>{" "}
           <br />
           <Button
             onClick={() => {
               const result = ffmpeg.FS("readFile", "output.mp4");
 
-              console.log({ result });
+              const video = new Blob([result.buffer], { type: "video/mp4" });
+
+              const url = URL.createObjectURL(video);
+
+              setFinalVideoUrl(url);
+
+              console.log({ asVideo: video, url });
             }}
           >
-            Check output.mp4
+            debug: Check output.mp4
           </Button>
           <Button
             onClick={() => {
@@ -218,7 +228,7 @@ export default function HomePage() {
               console.log({ result });
             }}
           >
-            Check Filelist.txt
+            debug: Check Filelist.txt
           </Button>
           {gif && <img src={gif} width="250" />}
           {audioUrl && (

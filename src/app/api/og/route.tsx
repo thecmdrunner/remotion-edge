@@ -70,6 +70,7 @@ export async function GET(request: Request) {
               padding: "0 120px",
               display: "flex",
               flexDirection: "column",
+              textAlign: "left",
               lineHeight: 1.4,
               whiteSpace: "pre-wrap",
             }}
