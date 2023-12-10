@@ -108,15 +108,27 @@ export default function HomePage() {
         .map(async (_, i) => {
           const imageUrl = absoluteUrl(`/api/og?frame=${i}&text=${titleText}`);
 
-          // const imageRes = await fetch(imageUrl, {
-          //   cache: "no-store",
-          // });
+          const imageRes = await fetch(imageUrl, {
+            method: "POST",
+            body: JSON.stringify({
+              frame: i,
+              text: titleText,
+            }),
+            cache: "no-store",
+          });
 
           // const imageBlob = await imageRes.blob();
 
+          const imageBuffer = await imageRes.arrayBuffer();
+
           // const imageFile = new File([imageBlob], `image-${i}.png`);
 
-          ffmpeg.FS("writeFile", `frame-${i}.png`, await fetchFile(imageUrl));
+          ffmpeg.FS(
+            "writeFile",
+            `frame-${i}.png`,
+            // @ts-expect-error - this works for now
+            await fetchFile(imageBuffer),
+          );
 
           console.log(`Wrote frame ${i + 1} to disk!`, {
             frame: i,

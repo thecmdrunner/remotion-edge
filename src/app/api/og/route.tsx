@@ -16,11 +16,11 @@ const routeSchema = z.object({
   frame: z.number().int().min(0).max(TOTAL_DURATION_IN_FRAMES),
   text: z.string().max(1000).default("").optional(),
 });
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // const { frame, text } = postSchema.parse(await req.json());
+    const { frame, text } = routeSchema.parse(await req.json());
 
-    const { searchParams } = new URL(req.url);
+    // const { searchParams } = new URL(req.url);
 
     // ?frame=<frame>
     // const hasFrame = searchParams.has("frame");
@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
 
     // const name = searchParams.get("name")?.slice(0, 100) ?? "World";
 
-    const { frame, text } = routeSchema.parse({
-      frame: Number(searchParams.get("frame")?.slice(0, 100)),
-      text: searchParams.get("text")?.slice(0, 1000),
-    });
+    // const { frame, text } = routeSchema.parse({
+    //   frame: Number(searchParams.get("frame")?.slice(0, 100)),
+    //   text: searchParams.get("text")?.slice(0, 1000),
+    // });
 
     const opacity = interpolate(frame, [0, TOTAL_DURATION_IN_FRAMES], [0, 1]);
     console.log({ text, frame, opacity });
