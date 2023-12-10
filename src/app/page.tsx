@@ -107,7 +107,9 @@ export default function HomePage() {
         .map(async (_, i) => {
           const imageUrl = `/api/og?frame=${i}&text=${titleText}`;
 
-          const imageRes = await fetch(imageUrl);
+          const imageRes = await fetch(imageUrl, {
+            cache: "no-store",
+          });
 
           const imageBlob = await imageRes.blob();
 
@@ -130,6 +132,7 @@ export default function HomePage() {
           body: JSON.stringify({
             total: totalSeconds * FPS,
           }),
+          cache: "no-store",
         })
       ).arrayBuffer();
 
