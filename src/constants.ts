@@ -8,7 +8,7 @@ export const FONT_FAMILY = "SF Pro Text, Helvetica, Arial, sans-serif";
 export const REMOTION_LOGO =
   "https://raw.githubusercontent.com/remotion-dev/brand/main/logo.svg";
 
-export const WIDTH = 1920;
-export const HEIGHT = 1080;
+export const WIDTH = 1920 / 2;
+export const HEIGHT = 1080 / 2;
 
 export const TOTAL_DURATION_IN_FRAMES = 5 * FPS;
