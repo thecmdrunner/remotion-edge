@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LucideInfo, LucideLoader, LucideXCircle } from "lucide-react";
+import Link from "next/link";
 const ffmpeg = createFFmpeg({ log: true });
 
 export default function HomePage() {
@@ -12,248 +14,343 @@ export default function HomePage() {
   const [logoColor2, setLogoColor2] = useState("#86A8E7");
   const [titleColor, setTitleColor] = useState("#000000");
   const [titleText, setTitleText] = useState("Welcome to Remotion");
+  const [error, setError] = useState<string | null>(null);
   const [ffmpegLoadStatus, setFFmpegLoadStatus] = useState<
     "idle" | "loading" | "loaded" | "error"
   >("idle");
-  const [ready, setReady] = useState(false);
+
   const [video, setVideo] = useState<File | null>(null);
   const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
-  const [gif, setGif] = useState<string | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isFetchingImages, setIsFetchingImages] = useState(false);
+
+  const [isFetchingFrames, setIsFetchingFrames] = useState(false);
+
+  const [isConvertingFramesToVideo, setIsConvertingFramesToVideo] =
+    useState(false);
+
   const [totalSeconds, setTotalSeconds] = useState(5);
 
   const loadFFmpeg = async () => {
-    await ffmpeg.load();
-    setReady(true);
-  };
+    setFFmpegLoadStatus("loading");
 
-  const convertToGif = async () => {
-    if (!video) {
-      return alert("Please upload a video first!");
+    try {
+      await ffmpeg.load();
+      setFFmpegLoadStatus("loaded");
+    } catch (err) {
+      console.error(err);
+      setFFmpegLoadStatus("error");
+      setError(
+        ` If you see this error, it means that FFMPEG failed to load. Please refresh the page and try again.`,
+      );
     }
-
-    // Write the file to memory
-    ffmpeg.FS("writeFile", "test.mp4", await fetchFile(video));
-
-    // Run the FFMpeg command
-    await ffmpeg.run(
-      "-i",
-      "test.mp4",
-      "-t",
-      "2.5",
-      "-ss",
-      "2.0",
-      "-f",
-      "gif",
-      "out.gif",
-    );
-
-    // Read the result
-    const data = ffmpeg.FS("readFile", "out.gif");
-
-    // Create a URL
-    const url = URL.createObjectURL(
-      new Blob([data.buffer], { type: "image/gif" }),
-    );
-    setGif(url);
   };
 
-  const convertVideoToMp3 = async () => {
-    if (!video) {
-      return alert("Please upload a video first!");
+  // const convertToGif = async () => {
+  //   if (!video) {
+  //     return alert("Please upload a video first!");
+  //   }
+
+  //   // Write the file to memory
+  //   ffmpeg.FS("writeFile", "test.mp4", await fetchFile(video));
+
+  //   // Run the FFMpeg command
+  //   await ffmpeg.run(
+  //     "-i",
+  //     "test.mp4",
+  //     "-t",
+  //     "2.5",
+  //     "-ss",
+  //     "2.0",
+  //     "-f",
+  //     "gif",
+  //     "out.gif",
+  //   );
+
+  //   // Read the result
+  //   const data = ffmpeg.FS("readFile", "out.gif");
+
+  //   // Create a URL
+  //   const url = URL.createObjectURL(
+  //     new Blob([data.buffer], { type: "image/gif" }),
+  //   );
+  //   setGif(url);
+  // };
+
+  // const convertVideoToMp3 = async () => {
+  //   if (!video) {
+  //     return alert("Please upload a video first!");
+  //   }
+
+  //   console.log(`Converting video to mp3...`, { videoSize: video.size });
+
+  //   // Write the file to memory
+  //   ffmpeg.FS("writeFile", "input.mp4", await fetchFile(video));
+
+  //   // Run the FFMpeg command
+  //   await ffmpeg.run("-i", "input.mp4", "-q:a", "0", "-map", "a", "output.mp3");
+
+  //   // Read the result
+  //   const data = ffmpeg.FS("readFile", "output.mp3");
+
+  //   // Create a URL
+  //   const url = URL.createObjectURL(
+  //     new Blob([data.buffer], { type: "audio/mp3" }),
+  //   );
+  //   setAudioUrl(url);
+  // };
+
+  const fetchFrames = async () => {
+    setIsFetchingFrames(true);
+    try {
+      // Write the images to memory
+      const framesPromises = Array(totalSeconds * FPS)
+        .fill(true)
+        .map(async (_, i) => {
+          const imageUrl = `/api/og?frame=${i}`;
+
+          const imageBlob = await (await fetch(imageUrl)).blob();
+          const imageFile = new File([imageBlob], "image.png");
+
+          ffmpeg.FS("writeFile", `frame-${i}.png`, await fetchFile(imageFile));
+
+          console.log(`Wrote frame ${i + 1} to disk!`);
+        });
+
+      await Promise.all(framesPromises);
+
+      const fileListAB = await (
+        await fetch(`/api/filelist?total=${totalSeconds * FPS}`)
+      ).arrayBuffer();
+
+      const filelistContents = new TextDecoder("utf-8").decode(fileListAB);
+
+      console.log({ filelistContents });
+
+      const newUint8Array = new Uint8Array(fileListAB);
+
+      ffmpeg.FS("writeFile", `filelist.txt`, newUint8Array);
+
+      console.log(`😎 Wrote all frames to disk!`);
+    } catch (err) {
+      setError(
+        (err as Error)?.message ??
+          "Unknown Error while fetching frames for the video",
+      );
+    } finally {
+      setIsFetchingFrames(false);
     }
-
-    console.log(`Converting video to mp3...`, { videoSize: video.size });
-
-    // Write the file to memory
-    ffmpeg.FS("writeFile", "input.mp4", await fetchFile(video));
-
-    // Run the FFMpeg command
-    await ffmpeg.run("-i", "input.mp4", "-q:a", "0", "-map", "a", "output.mp3");
-
-    // Read the result
-    const data = ffmpeg.FS("readFile", "output.mp3");
-
-    // Create a URL
-    const url = URL.createObjectURL(
-      new Blob([data.buffer], { type: "audio/mp3" }),
-    );
-    setAudioUrl(url);
-  };
-
-  const fetchAndWriteFrames = async () => {
-    setIsFetchingImages(true);
-
-    // Write the images to memory
-
-    const framesPromises = Array(totalSeconds * FPS)
-      .fill(true)
-      .map(async (_, i) => {
-        const imageUrl = `/api/og?frame=${i}`;
-
-        const imageBlob = await (await fetch(imageUrl)).blob();
-        const imageFile = new File([imageBlob], "image.png");
-
-        ffmpeg.FS("writeFile", `frame-${i}.png`, await fetchFile(imageFile));
-
-        console.log(`Wrote frame ${i + 1} to disk!`);
-      });
-
-    await Promise.all(framesPromises);
-
-    const fileListAB = await (
-      await fetch(`/api/filelist?total=${totalSeconds * FPS}`)
-    ).arrayBuffer();
-
-    const filelistContents = new TextDecoder("utf-8").decode(fileListAB);
-
-    console.log({ filelistContents });
-
-    const newUint8Array = new Uint8Array(fileListAB);
-
-    ffmpeg.FS("writeFile", `filelist.txt`, newUint8Array);
-
-    console.log(`😎 Wrote all frames to disk!`);
-
-    setIsFetchingImages(false);
   };
 
   const convertFramesToVideo = async () => {
-    await ffmpeg.run(
-      // `-framerate`,
-      // `${FPS}`,
-      //
-      // "concat",
+    setIsConvertingFramesToVideo(true);
+    try {
+      await ffmpeg.run(
+        // `-framerate`,
+        // `${FPS}`,
+        //
+        // "concat",
 
-      "-f",
-      "concat",
-      "-safe",
-      "0",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
 
-      "-i",
-      "filelist.txt",
-      // "-i",
-      // "frame-%d.png",
-      "-c:v",
-      "libx264",
-      "-pix_fmt",
-      "yuv420p",
-      "-framerate",
-      // "30",
-      // "-r",
-      `${FPS}`,
+        "-i",
+        "filelist.txt",
+        // "-i",
+        // "frame-%d.png",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-framerate",
+        // "30",
+        // "-r",
+        `${FPS}`,
+        //   "-vf",
+        //   '"fps=30"',
+        "output.mp4",
+      );
+      // await ffmpeg.run(
+      //   `-f`,
+      //   "concat",
+      //   "-safe",
+      //   "0",
+      //   "-i",
+      //   "filelist.txt",
+      //   "-c:v",
+      //   "libx264",
+      //   "-pix_fmt",
+      //   "yuv420p",
+      //   "-r",
+      //   `${FPS}`,
       //   "-vf",
       //   '"fps=30"',
-      "output.mp4",
-    );
-    // await ffmpeg.run(
-    //   `-f`,
-    //   "concat",
-    //   "-safe",
-    //   "0",
-    //   "-i",
-    //   "filelist.txt",
-    //   "-c:v",
-    //   "libx264",
-    //   "-pix_fmt",
-    //   "yuv420p",
-    //   "-r",
-    //   `${FPS}`,
-    //   "-vf",
-    //   '"fps=30"',
-    //   "output.mp4",
-    // );
+      //   "output.mp4",
+      // );
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+      const data = ffmpeg.FS("readFile", "output.mp4");
 
-    const data = ffmpeg.FS("readFile", "output.mp4");
+      const videoFile = new File([data.buffer], "output.mp4", {
+        type: "video/mp4",
+      });
 
-    // Create a URL
-    const url = URL.createObjectURL(
-      new Blob([data.buffer], { type: "video/mp4" }),
-    );
+      // Create a URL
+      const url = URL.createObjectURL(videoFile);
 
-    console.log(`🔥 Converted frames to video!`, { url });
+      console.log(`🔥 Converted frames to video!`, { url, video: videoFile });
 
-    setVideo(new File([data.buffer], "video.mp4"));
+      setVideo(videoFile);
+      setFinalVideoUrl(url);
+    } catch (err) {
+      console.error({ error: err });
+      setError(
+        (err as Error)?.message ??
+          "Unknown Error while converting frames to video",
+      );
+    } finally {
+      setIsConvertingFramesToVideo(false);
+    }
   };
 
   useEffect(() => {
     void loadFFmpeg();
   }, []);
 
+  if (ffmpegLoadStatus === "loading") {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center font-semibold">
+        <LucideLoader className="mr-2 h-6 w-6 animate-spin" />
+        <p>Loading FFMPEG...</p>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {ready ? (
-        <>
-          <input
-            type="file"
-            onChange={(e) => setVideo(e.target.files?.item(0) ?? null)}
-          />
-          {video && (
+    <main className="flex flex-wrap gap-8">
+      <div className="flex max-w-sm flex-col gap-y-4 p-4">
+        <h1 className="text-lg font-semibold">Render Videos on the browser!</h1>
+        <p>
+          This uses
+          <Link
+            href={`https://vercel.com/docs/functions/edge-functions/og-image-generation`}
+            className="underline"
+          >
+            <strong className="px-[1ch] font-mono">@vercel/og</strong>
+          </Link>
+          to generate frames for the video, based on a `frame` that we pass as a
+          param to the og route (just like Remotion).
+        </p>
+
+        <p className="flex items-center gap-2.5 rounded-lg bg-gray-200 px-3.5 py-2.5">
+          <LucideInfo className="h-4 w-4" /> Make sure to open the console
+          first!
+        </p>
+
+        <ol className="flex flex-col gap-y-3">
+          <li className="flex flex-col gap-y-2.5">
+            <span>
+              <strong>Step 1:</strong> Set the desired video duration in
+              seconds. The video will be{" "}
+              <code className="inline w-max rounded-lg bg-gray-200 px-1 py-1">
+                {FPS} fps
+              </code>{" "}
+              (will be configurable soon).
+            </span>
+            <div className="flex flex-col">
+              <Label className="font-mono">
+                Total video duration in seconds
+              </Label>
+              <Input
+                min={2}
+                type="number"
+                value={totalSeconds}
+                onChange={(e) => setTotalSeconds(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key.toLowerCase() === "backspace") {
+                    e.preventDefault();
+                    setTotalSeconds(2);
+                  }
+                }}
+                className="my-2 w-24"
+              />
+            </div>
+          </li>
+
+          <li className="flex flex-col gap-y-2.5">
+            <strong>Step 2:</strong> Click the button below to generate{" "}
+            {totalSeconds * FPS} frames as PNGs and write them to disk.
+            <br />
+            <Button loading={isFetchingFrames} onClick={fetchFrames}>
+              Fetch all frames
+            </Button>
+          </li>
+
+          <li className="flex flex-col gap-y-2.5">
+            <strong>Step 3:</strong> Click the button below to convert all the
+            frames to a video.
+            <br />
+            <Button
+              loading={isConvertingFramesToVideo}
+              onClick={convertFramesToVideo}
+            >
+              Convert to video
+            </Button>
+          </li>
+        </ol>
+      </div>
+
+      <div className="flex max-w-xs flex-col gap-y-4 p-4">
+        <h2 className="text-xl font-semibold">Result</h2>
+
+        <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-md bg-gray-100 sm:w-96">
+          {video && finalVideoUrl ? (
             <video
               controls
-              width="250"
-              src={URL.createObjectURL(video)}
-            ></video>
-          )}
-          <h3>Result</h3>
-          {/* <button onClick={convertVideoToMp3}>Convert</button> */}
-          <Button onClick={fetchAndWriteFrames}>1. Fetch all frames</Button>
-          <br />
-          <Button onClick={convertFramesToVideo}>
-            2. Convert to video
-          </Button>{" "}
-          <br />
-          <Button
-            onClick={() => {
-              const result = ffmpeg.FS("readFile", "output.mp4");
-
-              const video = new Blob([result.buffer], { type: "video/mp4" });
-
-              const url = URL.createObjectURL(video);
-
-              setFinalVideoUrl(url);
-
-              console.log({ asVideo: video, url });
-            }}
-          >
-            debug: Check output.mp4
-          </Button>
-          <Button
-            onClick={() => {
-              const file = ffmpeg.FS("readFile", "filelist.txt");
-
-              const result = new TextDecoder("utf-8").decode(file);
-
-              console.log({ result });
-            }}
-          >
-            debug: Check Filelist.txt
-          </Button>
-          {gif && <img src={gif} width="250" />}
-          {audioUrl && (
-            <audio controls src={audioUrl}>
-              Your browser does not support the
-              <code>audio</code> element.
-            </audio>
-          )}
-          {finalVideoUrl && <video controls src={finalVideoUrl}></video>}
-          <br />
-          <div className="flex flex-col">
-            <Label>Duration in seconds</Label>
-            <Input
-              type="number"
-              value={totalSeconds}
-              onChange={(e) => setTotalSeconds(Number(e.target.value))}
-              className="w-24"
+              className="object-cover object-center"
+              src={finalVideoUrl}
             />
+          ) : (
+            "No video yet!"
+          )}
+        </div>
+
+        {error && (
+          <div
+            className="mb-4 w-full space-y-2 rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-gray-800 dark:text-red-400"
+            role="alert"
+          >
+            <div className="flex items-center gap-3 font-medium">
+              <LucideXCircle className="stroke-red-700" /> Error
+            </div>
+            <span className="block">{error}</span>
           </div>
-        </>
-      ) : (
-        <p>Loading...</p>
-      )}
-    </>
+        )}
+
+        <Button
+          onClick={() => {
+            const result = ffmpeg.FS("readFile", "output.mp4");
+
+            const video = new Blob([result.buffer], { type: "video/mp4" });
+
+            const url = URL.createObjectURL(video);
+
+            setFinalVideoUrl(url);
+
+            console.log({ asVideo: video, url });
+          }}
+        >
+          debug: Check output.mp4
+        </Button>
+        <Button
+          onClick={() => {
+            const file = ffmpeg.FS("readFile", "filelist.txt");
+            const result = new TextDecoder("utf-8").decode(file);
+            console.log({ result });
+          }}
+        >
+          debug: Check Filelist.txt
+        </Button>
+      </div>
+    </main>
   );
 }
