@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LucideInfo, LucideLoader, LucideXCircle } from "lucide-react";
 import Link from "next/link";
+import { absoluteUrl } from "@/lib/utils";
 const ffmpeg = createFFmpeg({ log: true });
 
 export default function HomePage() {
@@ -105,22 +106,22 @@ export default function HomePage() {
       const framesPromises = Array(totalSeconds * FPS)
         .fill(true)
         .map(async (_, i) => {
-          const imageUrl = `/api/og?frame=${i}&text=${titleText}`;
+          const imageUrl = absoluteUrl(`/api/og?frame=${i}&text=${titleText}`);
 
-          const imageRes = await fetch(imageUrl, {
-            cache: "no-store",
-          });
+          // const imageRes = await fetch(imageUrl, {
+          //   cache: "no-store",
+          // });
 
-          const imageBlob = await imageRes.blob();
+          // const imageBlob = await imageRes.blob();
 
-          const imageFile = new File([imageBlob], `image-${i}.png`);
+          // const imageFile = new File([imageBlob], `image-${i}.png`);
 
-          ffmpeg.FS("writeFile", `frame-${i}.png`, await fetchFile(imageFile));
+          ffmpeg.FS("writeFile", `frame-${i}.png`, await fetchFile(imageUrl));
 
           console.log(`Wrote frame ${i + 1} to disk!`, {
             frame: i,
-            size: `${imageBlob.size / 1024} KB`,
-            type: imageBlob.type,
+            // size: `${imageBlob.size / 1024} KB`,
+            // type: imageBlob.type,
           });
         });
 
