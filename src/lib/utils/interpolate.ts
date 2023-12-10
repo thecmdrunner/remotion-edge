@@ -95,6 +95,7 @@ function checkInfiniteRange(name: string, arr: readonly number[]) {
     throw new Error(name + " must have at least 2 elements");
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-for-in-array
   for (const index in arr) {
     if (typeof arr[index] !== "number") {
       throw new Error(`${name} must contain only numbers`);
