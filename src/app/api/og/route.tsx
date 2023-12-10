@@ -1,5 +1,6 @@
 import { HEIGHT, TOTAL_DURATION_IN_FRAMES, WIDTH } from "@/constants";
 import { interpolate } from "@/lib/utils/interpolate";
+import { unstable_noStore } from "next/cache";
 import { ImageResponse } from "next/og";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
@@ -17,6 +18,8 @@ const routeSchema = z.object({
   text: z.string().max(1000).default("").optional(),
 });
 export async function POST(req: NextRequest) {
+  unstable_noStore();
+
   try {
     const { frame, text } = routeSchema.parse(await req.json());
 
