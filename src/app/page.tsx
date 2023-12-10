@@ -13,7 +13,7 @@ export default function HomePage() {
   const [logoColor1, setLogoColor1] = useState("#91EAE4");
   const [logoColor2, setLogoColor2] = useState("#86A8E7");
   const [titleColor, setTitleColor] = useState("#000000");
-  const [titleText, setTitleText] = useState("Welcome to Remotion");
+  const [titleText, setTitleText] = useState("World!");
   const [error, setError] = useState<string | null>(null);
   const [ffmpegLoadStatus, setFFmpegLoadStatus] = useState<
     "idle" | "loading" | "loaded" | "error"
@@ -105,20 +105,32 @@ export default function HomePage() {
       const framesPromises = Array(totalSeconds * FPS)
         .fill(true)
         .map(async (_, i) => {
-          const imageUrl = `/api/og?frame=${i}`;
+          const imageUrl = `/api/og?frame=${i}&text=${titleText}`;
 
-          const imageBlob = await (await fetch(imageUrl)).blob();
-          const imageFile = new File([imageBlob], "image.png");
+          const imageRes = await fetch(imageUrl);
+
+          const imageBlob = await imageRes.blob();
+
+          const imageFile = new File([imageBlob], `image-${i}.png`);
 
           ffmpeg.FS("writeFile", `frame-${i}.png`, await fetchFile(imageFile));
 
-          console.log(`Wrote frame ${i + 1} to disk!`);
+          console.log(`Wrote frame ${i + 1} to disk!`, {
+            frame: i,
+            size: `${imageBlob.size / 1024} KB`,
+            type: imageBlob.type,
+          });
         });
 
       await Promise.all(framesPromises);
 
       const fileListAB = await (
-        await fetch(`/api/filelist?total=${totalSeconds * FPS}`)
+        await fetch(`/api/filelist`, {
+          method: "POST",
+          body: JSON.stringify({
+            total: totalSeconds * FPS,
+          }),
+        })
       ).arrayBuffer();
 
       const filelistContents = new TextDecoder("utf-8").decode(fileListAB);
@@ -227,7 +239,7 @@ export default function HomePage() {
 
   return (
     <main className="flex flex-wrap gap-8">
-      <div className="flex max-w-sm flex-col gap-y-4 p-4">
+      <div className="flex max-w-md flex-col gap-y-4 p-4">
         <h1 className="text-lg font-semibold">Render Videos on the browser!</h1>
         <p>
           This uses
@@ -249,30 +261,41 @@ export default function HomePage() {
         <ol className="flex flex-col gap-y-3">
           <li className="flex flex-col gap-y-2.5">
             <span>
-              <strong>Step 1:</strong> Set the desired video duration in
-              seconds. The video will be{" "}
+              <strong>Step 1:</strong> Set the text and desired video duration
+              in seconds. The video will be{" "}
               <code className="inline w-max rounded-lg bg-gray-200 px-1 py-1">
                 {FPS} fps
               </code>{" "}
               (will be configurable soon).
             </span>
-            <div className="flex flex-col">
-              <Label className="font-mono">
-                Total video duration in seconds
-              </Label>
-              <Input
-                min={2}
-                type="number"
-                value={totalSeconds}
-                onChange={(e) => setTotalSeconds(Number(e.target.value))}
-                onKeyDown={(e) => {
-                  if (e.key.toLowerCase() === "backspace") {
-                    e.preventDefault();
-                    setTotalSeconds(2);
-                  }
-                }}
-                className="my-2 w-24"
-              />
+            <div className="flex gap-x-1">
+              <div className="flex flex-col">
+                <Label className="font-mono">Text</Label>
+                <Input
+                  min={2}
+                  type="text"
+                  value={titleText}
+                  onChange={(e) => setTitleText(e.target.value)}
+                  className="my-2 w-full"
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <Label className="font-mono">Duration (seconds)</Label>
+                <Input
+                  min={2}
+                  type="number"
+                  value={totalSeconds}
+                  onChange={(e) => setTotalSeconds(Number(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (e.key.toLowerCase() === "backspace") {
+                      e.preventDefault();
+                      setTotalSeconds(2);
+                    }
+                  }}
+                  className="my-2 w-24"
+                />
+              </div>
             </div>
           </li>
 

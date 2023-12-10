@@ -1,32 +1,49 @@
 import { HEIGHT, TOTAL_DURATION_IN_FRAMES, WIDTH } from "@/constants";
 import { interpolate } from "@/lib/utils/interpolate";
-import { Title } from "@/remotion/HelloWorld/Title";
 import { ImageResponse } from "next/og";
+import { type NextRequest } from "next/server";
+import { z } from "zod";
 
 // App router includes @vercel/og.
 // No need to install it.
 
 export const runtime = "edge";
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+export const revalidate = 0;
 
-export async function GET(request: Request) {
+const routeSchema = z.object({
+  frame: z.number().int().min(0).max(TOTAL_DURATION_IN_FRAMES),
+  text: z.string().max(1000).default("").optional(),
+});
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    // const { frame, text } = postSchema.parse(await req.json());
+
+    const { searchParams } = new URL(req.url);
 
     // ?frame=<frame>
-    const hasFrame = searchParams.has("frame");
+    // const hasFrame = searchParams.has("frame");
 
-    if (!hasFrame) {
-      return new Response(`Missing frame parameter`, { status: 400 });
-    }
+    // if (!hasFrame) {
+    //   return new Response(`Missing frame parameter`, { status: 400 });
+    // }
 
-    const frame = Number(searchParams.get("frame")?.slice(0, 100));
+    // const frame = Number(searchParams.get("frame")?.slice(0, 100));
 
-    if (isNaN(frame)) {
-      return new Response(`Invalid frame parameter`, { status: 400 });
-    }
+    // if (isNaN(frame)) {
+    //   return new Response(`Invalid frame parameter`, { status: 400 });
+    // }
+
+    // const name = searchParams.get("name")?.slice(0, 100) ?? "World";
+
+    const { frame, text } = routeSchema.parse({
+      frame: Number(searchParams.get("frame")?.slice(0, 100)),
+      text: searchParams.get("text")?.slice(0, 1000),
+    });
+
     const opacity = interpolate(frame, [0, TOTAL_DURATION_IN_FRAMES], [0, 1]);
-
-    console.log({ frame, opacity });
+    console.log({ text, frame, opacity });
 
     return new ImageResponse(
       (
@@ -75,6 +92,8 @@ export async function GET(request: Request) {
               whiteSpace: "pre-wrap",
             }}
           >
+            Hello {text}! 👋
+            <br />
             Current frame is: {frame.toString()}
             {/* <br />
             Current duration is{" "}
@@ -83,6 +102,7 @@ export async function GET(request: Request) {
         </div>
       ),
       {
+        emoji: "noto",
         width: WIDTH,
         height: HEIGHT,
       },
