@@ -277,8 +277,8 @@ export default function HomePage() {
         <ol className="flex flex-col gap-y-3">
           <li className="flex flex-col gap-y-2.5">
             <span>
-              <strong>Step 1:</strong> Set the text and desired video duration
-              in seconds. The video will be{" "}
+              <strong>Step 1:</strong> Set the text and desired video duration.
+              The video will be{" "}
               <code className="inline w-max rounded-lg bg-gray-200 px-1 py-1">
                 {FPS} fps
               </code>{" "}
