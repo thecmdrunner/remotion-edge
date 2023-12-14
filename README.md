@@ -2,9 +2,9 @@
 
 Vercel had some weird caching behavior, and OG images for some requests wouldn't come.
 
-# "Roadmap"
+# "Roadmap" using Supabase?
 - [Try Supabase edge functions for generating OG images](https://supabase.com/docs/guides/functions/examples/og-image)
-- 
+- [Take screenshots of the browser using Puppeteer](https://supabase.com/docs/guides/functions/examples/screenshots)
 
 # Create T3 App
 
