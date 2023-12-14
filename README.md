@@ -1,3 +1,11 @@
+# Why Netlify instead of Vercel?
+
+Vercel had some weird caching behavior, and OG images for some requests wouldn't come.
+
+# "Roadmap"
+- [Try Supabase edge functions for generating OG images](https://supabase.com/docs/guides/functions/examples/og-image)
+- 
+
 # Create T3 App
 
 This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
