@@ -20,6 +20,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "geist": "^1.2.0",
+    "html-to-image": "^1.11.11",
     "lucide-react": "^0.294.0",
     "next": "^14.0.3",
     "react": "18.2.0",

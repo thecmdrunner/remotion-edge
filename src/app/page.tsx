@@ -1,19 +1,22 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { FPS } from "@/constants";
-import { useEffect, useState } from "react";
-import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FPS } from "@/constants";
+import { absoluteUrl } from "@/lib/utils";
+import { handleSetImage } from "@/lib/utils/conversion";
+import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 import { LucideInfo, LucideLoader, LucideXCircle } from "lucide-react";
 import Link from "next/link";
-import { absoluteUrl } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
 const ffmpeg = createFFmpeg({ log: true });
 
 export default function HomePage() {
   const [logoColor1, setLogoColor1] = useState("#91EAE4");
-  const [logoColor2, setLogoColor2] = useState("#86A8E7");
-  const [titleColor, setTitleColor] = useState("#000000");
+  const [subtitleText, setSubtitleText] = useState("👋 I'm just a div!");
+  const imageDivRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+
   const [titleText, setTitleText] = useState("World!");
   const [error, setError] = useState<string | null>(null);
   const [ffmpegLoadStatus, setFFmpegLoadStatus] = useState<
@@ -254,142 +257,174 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex flex-wrap gap-8">
-      <div className="flex max-w-md flex-col gap-y-4 p-4">
-        <h1 className="text-lg font-semibold">Render Videos on the browser!</h1>
-        <p>
-          This uses
-          <Link
-            href={`https://vercel.com/docs/functions/edge-functions/og-image-generation`}
-            className="underline"
-          >
-            <strong className="px-[1ch] font-mono">@vercel/og</strong>
-          </Link>
-          to generate frames for the video, based on a `frame` that we pass as a
-          param to the og route (just like Remotion).
-        </p>
-
-        <p className="flex items-center gap-2.5 rounded-lg bg-gray-200 px-3.5 py-2.5">
-          <LucideInfo className="h-4 w-4" /> Make sure to open the console
-          first!
-        </p>
-
-        <ol className="flex flex-col gap-y-3">
-          <li className="flex flex-col gap-y-2.5">
-            <span>
-              <strong>Step 1:</strong> Set the text and desired video duration.
-              The video will be{" "}
-              <code className="inline w-max rounded-lg bg-gray-200 px-1 py-1">
-                {FPS} fps
-              </code>{" "}
-              (will be configurable soon).
-            </span>
-            <div className="flex gap-x-1">
-              <div className="flex flex-col">
-                <Label className="font-mono">Text</Label>
-                <Input
-                  min={2}
-                  type="text"
-                  value={titleText}
-                  onChange={(e) => setTitleText(e.target.value)}
-                  className="my-2 w-full"
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <Label className="font-mono">Duration (seconds)</Label>
-                <Input
-                  min={2}
-                  type="number"
-                  value={totalSeconds}
-                  onChange={(e) => setTotalSeconds(Number(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key.toLowerCase() === "backspace") {
-                      e.preventDefault();
-                      setTotalSeconds(2);
-                    }
-                  }}
-                  className="my-2 w-24"
-                />
-              </div>
-            </div>
-          </li>
-
-          <li className="flex flex-col gap-y-2.5">
-            <strong>Step 2:</strong> Click the button below to generate{" "}
-            {totalSeconds * FPS} frames as PNGs and write them to disk.
-            <br />
-            <Button loading={isFetchingFrames} onClick={fetchFrames}>
-              Fetch all frames
-            </Button>
-          </li>
-
-          <li className="flex flex-col gap-y-2.5">
-            <strong>Step 3:</strong> Click the button below to convert all the
-            frames to a video.
-            <br />
-            <Button
-              loading={isConvertingFramesToVideo}
-              onClick={convertFramesToVideo}
+    <>
+      <main ref={mainRef} className="flex flex-wrap gap-8">
+        <div className="flex max-w-md flex-col gap-y-4 p-4">
+          <h1 className="text-lg font-semibold">
+            Render Videos on the browser!
+          </h1>
+          <p>
+            This uses
+            <Link
+              href={`https://vercel.com/docs/functions/edge-functions/og-image-generation`}
+              className="underline"
             >
-              Convert to video
-            </Button>
-          </li>
-        </ol>
-      </div>
+              <strong className="px-[1ch] font-mono">@vercel/og</strong>
+            </Link>
+            to generate frames for the video, based on a `frame` that we pass as
+            a param to the og route (just like Remotion).
+          </p>
 
-      <div className="flex max-w-xs flex-col gap-y-4 p-4">
-        <h2 className="text-xl font-semibold">Result</h2>
+          <p className="flex items-center gap-2.5 rounded-lg bg-gray-200 px-3.5 py-2.5">
+            <LucideInfo className="h-4 w-4" /> Make sure to open the console
+            first!
+          </p>
 
-        <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-md bg-gray-100 sm:w-96">
-          {video && finalVideoUrl ? (
-            <video
-              controls
-              className="object-cover object-center"
-              src={finalVideoUrl}
-            />
-          ) : (
-            "No video yet!"
-          )}
+          <ol className="flex flex-col gap-y-3">
+            <li className="flex flex-col gap-y-2.5">
+              <span>
+                <strong>Step 1:</strong> Set the text and desired video
+                duration. The video will be{" "}
+                <code className="inline w-max rounded-lg bg-gray-200 px-1 py-1">
+                  {FPS} fps
+                </code>{" "}
+                (will be configurable soon).
+              </span>
+              <div className="flex gap-x-1">
+                <div className="flex flex-col">
+                  <Label className="font-mono">Text</Label>
+                  <Input
+                    min={2}
+                    type="text"
+                    value={titleText}
+                    onChange={(e) => setTitleText(e.target.value)}
+                    className="my-2 w-full"
+                  />
+                </div>
+
+                <div className="flex flex-col">
+                  <Label className="font-mono">Duration (seconds)</Label>
+                  <Input
+                    min={2}
+                    type="number"
+                    value={totalSeconds}
+                    onChange={(e) => {
+                      const toSet = Number(e.target.value);
+                      if (toSet < 2) setTotalSeconds(2);
+                      else setTotalSeconds(toSet);
+                    }}
+                    // onKeyDown={(e) => {
+                    //   if (e.key.toLowerCase() === "backspace") {
+                    //     e.preventDefault();
+                    //     setTotalSeconds(2);
+                    //   }
+                    // }}
+                    className="my-2 w-24"
+                  />
+                </div>
+              </div>
+            </li>
+
+            <li className="flex flex-col gap-y-2.5">
+              <strong>Step 2:</strong> Click the button below to generate{" "}
+              {totalSeconds * FPS} frames as PNGs and write them to disk.
+              <br />
+              <Button loading={isFetchingFrames} onClick={fetchFrames}>
+                Fetch all frames
+              </Button>
+            </li>
+
+            <li className="flex flex-col gap-y-2.5">
+              <strong>Step 3:</strong> Click the button below to convert all the
+              frames to a video.
+              <br />
+              <Button
+                loading={isConvertingFramesToVideo}
+                onClick={convertFramesToVideo}
+              >
+                Convert to video
+              </Button>
+            </li>
+          </ol>
         </div>
 
-        {error && (
-          <div
-            className="mb-4 w-full space-y-2 rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-gray-800 dark:text-red-400"
-            role="alert"
-          >
-            <div className="flex items-center gap-3 font-medium">
-              <LucideXCircle className="stroke-red-700" /> Error
-            </div>
-            <span className="block">{error}</span>
+        <div className="flex max-w-xs flex-col gap-y-4 p-4">
+          <h2 className="text-xl font-semibold">Result</h2>
+
+          <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-md bg-gray-100 sm:w-96">
+            {video && finalVideoUrl ? (
+              <video
+                controls
+                className="object-cover object-center"
+                src={finalVideoUrl}
+              />
+            ) : (
+              "No video yet!"
+            )}
           </div>
-        )}
 
-        <Button
-          onClick={() => {
-            const result = ffmpeg.FS("readFile", "output.mp4");
+          {error && (
+            <div
+              className="mb-4 w-full space-y-2 rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-gray-800 dark:text-red-400"
+              role="alert"
+            >
+              <div className="flex items-center gap-3 font-medium">
+                <LucideXCircle className="stroke-red-700" /> Error
+              </div>
+              <span className="block">{error}</span>
+            </div>
+          )}
 
-            const video = new Blob([result.buffer], { type: "video/mp4" });
+          <Button
+            type="button"
+            onClick={() => {
+              const result = ffmpeg.FS("readFile", "output.mp4");
 
-            const url = URL.createObjectURL(video);
+              const video = new Blob([result.buffer], { type: "video/mp4" });
 
-            setFinalVideoUrl(url);
+              const url = URL.createObjectURL(video);
 
-            console.log({ asVideo: video, url });
-          }}
-        >
-          debug: Check output.mp4
-        </Button>
-        <Button
-          onClick={() => {
-            const file = ffmpeg.FS("readFile", "filelist.txt");
-            const result = new TextDecoder("utf-8").decode(file);
-            console.log({ result });
-          }}
-        >
-          debug: Check Filelist.txt
-        </Button>
+              setFinalVideoUrl(url);
+
+              console.log({ asVideo: video, url });
+            }}
+          >
+            debug: Check output.mp4
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              const file = ffmpeg.FS("readFile", "filelist.txt");
+              const result = new TextDecoder("utf-8").decode(file);
+              console.log({ result });
+            }}
+          >
+            debug: Check Filelist.txt
+          </Button>
+        </div>
+      </main>
+
+      <div
+        ref={imageDivRef}
+        className="relative flex h-[24rem] w-[16rem] flex-col items-center justify-around overflow-hidden bg-transparent"
+      >
+        <img
+          className="z-1 absolute h-full w-full object-cover object-center dark:drop-shadow-[0_0_0.3rem_#ffffff70]"
+          src="https://images.pexels.com/photos/1366630/pexels-photo-1366630.jpeg?cs=srgb&dl=pexels-max-andrey-1366630.jpg&fm=jpg&w=4000&h=6000"
+        />
+
+        <input
+          value={subtitleText}
+          onChange={({ target: { value } }) => setSubtitleText(value)}
+          className="absolute bottom-0 z-[2] h-9 rounded-2xl bg-white/20 px-2 py-1 text-center font-mono text-black backdrop-blur-sm focus:outline-none dark:drop-shadow-[0_0_0.1rem_#00000040]"
+        />
       </div>
-    </main>
+      <Button
+        type="button"
+        onClick={() => handleSetImage(imageDivRef, mainRef)}
+      >
+        Convert to Image
+      </Button>
+    </>
   );
 }

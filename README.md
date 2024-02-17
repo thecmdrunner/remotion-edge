@@ -1,8 +1,17 @@
-# Why Netlify instead of Vercel?
+# Trying image gen via:
 
-Vercel had some weird caching behavior, and OG images for some requests wouldn't come.
+1. `@vercel/og` - When hosted on Vercel, it works fine except Vercel's caching sometimes breaks images when fetched and converted into blob using `fetch`. Works fine on Netlify though. OG images for some requests simply wouldn't come through on Vercel.
+
+2. [`html-to-image`](https://www.npmjs.com/package/html-to-image) - Works well and supports all html elements and css properties. It uses canvas to convert html elements to image in various formats - png, jpeg, canvas, raw image pixelData, etc.
+
+Does not support some css features like `backdrop-filter`.
+
+An alternative is [use-react-screenshot](https://www.npmjs.com/package/use-react-screenshot) which uses `html2canvas` under the hood. It's just a react hook that's easier to use. May lack some features of `html-to-image`.
+
+3. [Satori](https://github.com/vercel/satori) - Works for the most part, but has limited support for html elements and css properties. But a good fallback option since it works on edge functions and browsers too (Maintained by Vercel, so likely works well on iOS).
 
 # "Roadmap" using Supabase?
+
 - [Try Supabase edge functions for generating OG images](https://supabase.com/docs/guides/functions/examples/og-image)
 - [Take screenshots of the browser using Puppeteer](https://supabase.com/docs/guides/functions/examples/screenshots)
 
